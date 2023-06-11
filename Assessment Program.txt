@@ -1,0 +1,80 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+
+// sample call statement ./program_name /path/of/directory .C hello 
+int main(int argc, char* argv[]) 
+{
+    if (argc < 4) 
+	{
+        printf("Usage: ./program_name directory fileType searchWord\n");
+        return 1;
+    }
+
+    const char* startingDirectory = argv[1];
+    const char* fileType = argv[2];
+    const char* searchWord = argv[3];
+
+    FindFiles(startingDirectory, fileType, searchWord);
+
+    return 0;
+}
+
+
+void FindFiles(const char* directory, const char* fileType, const char* searchWord) 
+{
+    DIR* dir;
+    struct dirent* entry;
+
+    if ((dir = opendir(directory)) == NULL) 
+	{
+        perror("opendir");
+        return;
+    }
+
+    while ((entry = readdir(dir)) != NULL) 
+	{
+	/* Below used constant DT_REG is defined in the dirent.h header file and represents the file 
+	   type for a regular file within the d_type field of the dirent structure. */
+        if (entry->d_type == DT_REG) 
+		{
+            char path[256];
+            snprintf(path, sizeof(path), "%s/%s", directory, entry->d_name);
+
+            if (strstr(entry->d_name, fileType) != NULL) 
+			{
+                FILE* file = fopen(path, "r");
+                if (file == NULL) 
+				{
+                    perror("fopen");
+                    continue;
+                }
+
+                char line[256];
+                while (fgets(line, sizeof(line), file) != NULL) 
+				{
+                    if (strstr(line, searchWord) != NULL) 
+					{
+                        printf("%s\n", path);
+                        break;
+                    }
+                }
+
+                fclose(file);
+            }
+        }
+	/* Below used constant DT_DIR represents the file type for a directory within the d_type field of the dirent structure.*/
+        else if (entry->d_type == DT_DIR) 
+		{
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) 
+			{
+                char subdirectory[256];
+                snprintf(subdirectory, sizeof(subdirectory), "%s/%s", directory, entry->d_name);
+                FindFiles(subdirectory, fileType, searchWord);
+            }
+        }
+    }
+
+    closedir(dir);
+}
