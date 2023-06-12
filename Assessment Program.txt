@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <qtqiconv.h>
+#include <qwcrsval.h>
+
+void FindFiles(const char* directory, const char* fileType, const char* searchWord);
 
 // sample call statement ./program_name /path/of/directory .C hello 
 int main(int argc, char* argv[]) 
@@ -56,8 +60,16 @@ void FindFiles(const char* directory, const char* fileType, const char* searchWo
 				{
                     if (strstr(line, searchWord) != NULL) 
 					{
-                        printf("%s\n", path);
-                        break;
+                        // Convert the file path to EBCDIC encoding
+						char ebcdicPath[512];
+						QpConvEbcToCcsid(path, ebcdicPath, strlen(path), 37, sizeof(ebcdicPath));
+
+						// Print the file path in green on the green screen
+						char greenPath[518];
+						snprintf(greenPath, sizeof(greenPath), "\033[32m%s\033[0m\n", ebcdicPath);
+						QpWrcSts(greenPath, strlen(greenPath));
+
+						break;
                     }
                 }
 
